@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 using namespace std;
 
 // 油井y坐标指针

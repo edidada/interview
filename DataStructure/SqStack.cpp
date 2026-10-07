@@ -9,6 +9,8 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "malloc.h"
+#include <cstdlib>
+#include <cstdio>
 
 //5个常量定义
 #define TRUE 1

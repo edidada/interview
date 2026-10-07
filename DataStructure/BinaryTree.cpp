@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdlib>
+#include <cstdio>
 
 #define TRUE 1
 #define FALSE 0

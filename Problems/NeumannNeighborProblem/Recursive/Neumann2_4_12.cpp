@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <cstdio>
 
 //递归法
 int Neumann2_4_12(int n) {

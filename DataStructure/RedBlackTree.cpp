@@ -1,6 +1,7 @@
 #define BLACK 1
 #define RED 0
 #include <iostream>
+#include <cstdio>
 
 using namespace std;
 

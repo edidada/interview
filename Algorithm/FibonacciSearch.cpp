@@ -1,8 +1,16 @@
 // 斐波那契查找
 
-#include "stdafx.h"
+// stdafx.h 来自这份代码原来的 VS 预编译头工程，仓库里并不存在这个文件。
+// 这里保留原始意图，改成条件包含：环境里找得到就包含，找不到就交给下面的标准头。
+#if defined(__has_include)
+#  if __has_include("stdafx.h")
+#    include "stdafx.h"
+#  endif
+#endif
+
 #include <memory>
 #include  <iostream>
+#include <cstring>
 using namespace std;
 
 const int max_size=20;//斐波那契数组的长度
