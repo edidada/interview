@@ -3,3 +3,17 @@
 *.bat
 .idea
 *.iml
+
+# Keep CMake build files tracked: the *.txt rule above would otherwise hide them silently
+!CMakeLists.txt
+
+# CMake / CLion build output
+build/
+build-*/
+cmake-build-*/
+
+### Mac OS ###
+.DS_Store
+
+### Windows ###
+Thumbs.db
