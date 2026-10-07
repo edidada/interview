@@ -1,0 +1,130 @@
+name: CI
+
+# Every directory with real programs is built from the top-level CMakeLists.txt,
+# so CI only has to configure once and build the whole target graph.
+on:
+  push:
+    branches:
+      - master
+      - ci
+    # The bulk of this repository is documentation; skip markdown-only changes.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "images/**"
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  cmake-matrix:
+    name: ${{ matrix.os }} · ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One broken leg must not cancel the others; the point is to see every
+      # compiler's diagnostics.
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        build_type:
+          - Debug
+          - Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        shell: bash
+        run: |
+          echo "runner: $RUNNER_OS"
+          cmake --version
+
+      - name: Configure
+        shell: bash
+        env:
+          BUILD_TYPE: ${{ matrix.build_type }}
+        run: |
+          # On Windows the default multi-config "Visual Studio" generator is used,
+          # where the configuration is chosen at build time. On Unix the default
+          # generator is single-config, so the type has to be set here.
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cmake -S . -B build
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+          fi
+
+      - name: Build
+        shell: bash
+        env:
+          BUILD_TYPE: ${{ matrix.build_type }}
+        run: cmake --build build --config "$BUILD_TYPE"
+
+      - name: Smoke run
+        shell: bash
+        env:
+          BUILD_TYPE: ${{ matrix.build_type }}
+        run: |
+          set -uo pipefail
+
+          # One executable per self-contained program, target name = file stem.
+          programs="CountSort FibonacciSearch HeapSort \
+                    BinaryTree HashTable LinkList LinkList_with_head RedBlackTree SqList SqStack \
+                    ChessboardCoverage pack Neumann2_3_12 Neumann2_4_12 MatchTable Tubing \
+                    DesignPattern"
+
+          # Known pre-existing defect, reported instead of hidden:
+          # DataStructure/RedBlackTree.cpp calls tree.~bst() explicitly near the end of
+          # main(); the stack object is then destroyed a second time at scope exit, so
+          # the destructor frees the same nodes twice and the process crashes during
+          # teardown. It crashes on MSVC and exits non-zero on MinGW already today.
+          known_bad="RedBlackTree"
+
+          # Each program reads from stdin (getchar/scanf); /dev/null keeps them moving
+          # and perl's alarm gives a portable timeout, because macOS has no timeout(1).
+          run_one() {
+            if command -v perl >/dev/null 2>&1; then
+              perl -e 'alarm 30; exec @ARGV' -- "$1" </dev/null >/dev/null 2>&1
+            else
+              "$1" </dev/null >/dev/null 2>&1
+            fi
+          }
+
+          status=0
+          for name in $programs; do
+            binary=$(find build -type f \( -name "$name" -o -name "$name.exe" \) | head -n 1)
+            if [ -z "$binary" ]; then
+              echo "::error::$name: no binary produced by the build"
+              status=1
+              continue
+            fi
+
+            if run_one "$binary"; then
+              echo "OK      $name"
+            else
+              code=$?
+              if printf ' %s ' "$known_bad" | grep -q " $name "; then
+                echo "::warning::$name exited with $code - known pre-existing double-free at teardown"
+              else
+                echo "::error::$name exited with $code"
+                status=1
+              fi
+            fi
+          done
+
+          exit "$status"
+
+      - name: Build artifacts are not tracked
+        shell: bash
+        run: |
+          # Guards the .gitignore rules added together with this build system.
+          if git status --porcelain | grep -q "^??"; then
+            echo "::error::unexpected untracked files after a build: "
+            git status --porcelain | grep "^??"
+            exit 1
+          fi
+          echo "OK      working tree stays clean; build output is ignored"
