@@ -8,9 +8,13 @@
 
 #include "stdio.h"
 #include "stdlib.h"
-#include "malloc.h"
-#include <cstdlib>
-#include <cstdio>
+// malloc.h 是 glibc 专有头，macOS 上没有；这里只用 malloc/free，已由上面的 stdlib.h 提供，
+// 因此保留该行但做成条件包含：环境里找得到就包含。
+#if defined(__has_include)
+#  if __has_include("malloc.h")
+#    include "malloc.h"
+#  endif
+#endif
 
 //5个常量定义
 #define TRUE 1

@@ -1,7 +1,5 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include <cstdlib>
-#include <cstdio>
 
 #define SUCCESS 1
 #define UNSUCCESS 0

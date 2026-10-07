@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <cstdio>
 
 //通项法
 int Neumann2_3_12(int n) {
